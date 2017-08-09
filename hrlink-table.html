@@ -1,0 +1,259 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="hrlink-table-column.html">
+
+<dom-module id="hrlink-table">
+	<template>
+		<style>
+			:host {
+				@apply --layout-vertical;
+				@apply --layout-scroll;
+			}
+
+			#header {
+				display: inline-block;
+				white-space: nowrap;
+				background-color: var(--light-theme-divider-color);
+			}
+
+			#contents {
+			}
+
+			.heading {
+				@apply --layout-inline;
+				@apply --layout-center;
+				height: 3em;
+				font-size: 1em;
+				font-weight: normal;
+				margin: 0;
+				padding: 0 1em;
+				box-sizing: border-box;
+				background-color: #ededed;
+				background-color: var(--light-theme-divider-color);
+			}
+
+			.table-row {
+				@apply --layout-inline;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+				white-space: nowrap;
+				border-bottom: 1px solid var(--divider-color);
+			}
+
+			:host([strip]) .table-row:not(.selected):nth-child(even) {
+				background-color: #fdfdfd;
+			}
+
+			.table-row.selected {
+				background-color: var(--light-primary-color);
+				border-bottom-color: var(--light-primary-color);
+			}
+
+			.table-cell {
+				@apply --layout-flex-none;
+				@apply --layout-inline;
+				@apply --layout-center;
+				height: 2.5em;
+				margin: 0;
+				padding: 0 1em;
+				box-sizing: border-box;
+			}
+			
+			/* card styles */
+			
+			/* end card styles */
+
+		</style>
+		<header id="header"></header>
+		<section id="contents"></section>
+	</template>
+
+	<script>
+		/**
+		 * `hrlink-table`
+		 * A Material Design table
+		 *
+		 * @customElement
+		 * @polymer
+		 * @demo demo/index.html
+		 **/
+		class HrlinkTable extends Polymer.DomRepeat {
+		
+			static get is() { return 'hrlink-table'; }
+			
+			static get template() {
+				return Polymer.DomModule.import(this.is, 'template');
+			}
+
+			static get properties() {
+				return {
+					mode: {
+						type: String,
+						value: () => 'table' // table | card
+					},
+					editable: {
+						type: Boolean,
+						value: true,
+						observer: '__eitableChanged'
+					},
+					selectable: {
+						type: Boolean,
+						observer: '__selectableChanged'
+					}
+				};
+			}
+				
+			constructor() {
+				super();
+				this.__columns = [];
+				this.__templatized = false;
+			}
+			
+			__ensureTemplatized() {
+				// Templatizing (generating the instance constructor) needs to wait
+				// until ready, since won't have its template content handed back to
+				// it until then
+
+				if (!this.__templatized) {
+					let columns = this.querySelectorAll('hrlink-table-column');
+					
+					if (!columns.length) {
+						// // Wait until childList changes and template should be there by then
+						let observer = new MutationObserver(() => {
+							if (this.querySelector('hrlink-table-column')) {
+								observer.disconnect();
+								this.__render();
+							} else {
+								throw new Error('hrlink-table requires one or more <hrlink-table-column> child');
+							}
+						})
+						observer.observe(this, {childList: true});
+						return false;
+					}
+
+					// Template instance props that should be excluded from forwarding
+					let instanceProps = {
+						[this.as]: true,
+						[this.indexAs]: true,
+						[this.itemsIndexAs]: true,
+						//'editable': true,
+						//'selectable': true
+					};
+					
+					let options = {
+						mutableData: this.mutableData,
+						parentModel: true,
+						instanceProps: instanceProps,
+						/**
+						 * @this {this}
+						 * @param {string} prop Property to set
+						 * @param {*} value Value to set property to
+						 */
+						forwardHostProp: function(prop, value) {
+							let i$ = this.__instances;
+							for (let i=0, inst; (i<i$.length) && (inst=i$[i]); i++) {
+								inst.forwardHostProp(prop, value);
+							}
+						},
+						/**
+						 * @this {this}
+						 * @param {Object} inst Instance to notify
+						 * @param {string} prop Property to notify
+						 * @param {*} value Value to notify
+						 */
+						notifyInstanceProp: function(inst, prop, value) {
+							if (Polymer.Path.matches(this.as, prop)) {
+								let idx = inst[this.itemsIndexAs];
+								if (prop == this.as) {
+									this.items[idx] = value;
+								}
+								let path = Polymer.Path.translate(this.as, 'items.' + idx, prop);
+								this.notifyPath(path, value);
+							}
+						}
+					};
+
+					columns = Array.from(columns);
+
+					for (let column of columns) {
+						if (!column.__ensureTemplatized(this, options)) {
+							return false;
+						}
+					}
+
+					this.__columns = columns;
+					this.__templatized = true;
+				}
+
+				return true;
+			}
+
+			__render() {
+				super.__render();
+
+				for (let column of this.__columns) {
+					let heading = document.createElement('h4');
+					heading.className = 'heading';
+					column.__insertHeading(heading);
+
+					this.$.header.appendChild(heading);
+				}
+			}
+
+			__insertInstance(item, instIdx, itemIdx) {
+				let model = {
+					[this.as]: item,
+					[this.indexAs]: instIdx,
+					[this.itemsIndexAs]: itemIdx,
+				};
+				// TODO: reuse
+				let beforeRow = this.__instances[instIdx];
+				let group = document.createElement('ul');
+
+				group.className = 'table-row';
+				group.addEventListener('click', (event) => {
+					if (group.classList.contains('selected')) {
+						group.classList.remove('selected');
+					} else {
+						group.classList.add('selected');
+					}
+				}, true);
+
+				for (let column of this.__columns) {
+					let item = document.createElement('li');
+					item.className = 'table-cell';
+					column.__insertInstance(item, model, instIdx, itemIdx);
+					group.appendChild(item);
+				}
+
+				this.$.contents.appendChild(group);
+			}
+			
+			__onRowSelectedChanged(event) {
+			
+			}
+			
+			__editRow(rowIndex) {
+				
+			}
+			
+			__eitableChanged(editable) {
+				if (editable) {
+					
+				}
+			}
+			
+			__selectableChanged(selectable) {
+				if (selectable) {
+					
+				}
+			}
+
+		}
+
+		window.customElements.define(HrlinkTable.is, HrlinkTable);
+	</script>
+</dom-module>
+

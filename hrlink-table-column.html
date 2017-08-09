@@ -1,0 +1,109 @@
+<link rel="import" href="../polymer/polymer-element.html">
+
+<dom-module id="hrlink-table-column">
+	<script>
+		/**
+		 * `hrlink-table-column`
+		 * A Material Design table's column
+		 *
+		 * @customElement
+		 * @polymer
+		 * @demo demo/index.html
+		 **/
+		class HrlinkTableColumn extends Polymer.Element {
+			static get is() { return 'hrlink-table-column'; }
+
+			static get properties() {
+				return {
+					width: {
+						type: Number,
+						observer: '__handleWidthChanged',
+					}
+				};
+			}
+
+			static get template() {
+				return null;
+			}
+
+			constructor() {
+				super();
+
+				['editor', 'display', 'heading'].forEach((name) => {
+					let self = this;
+					let template = null;
+					let selector = `template[slot="${name}"]`;
+
+					this[name] = {
+						ctor: null,
+						instance: null,
+						instances: [],
+						get template () {
+							if (!template) {
+								template = self.querySelector(selector);
+							}
+							return template;
+						}
+					};
+				});
+			}
+			
+			__ensureTemplatized(owner, options) {
+				// Templatizing (generating the instance constructor) needs to wait
+				// until ready, since won't have its template content handed back to
+				// it until then
+				['editor', 'display', 'heading'].forEach((name) => {
+					let target = this[name];
+					
+					if (!target.ctor) {
+						if (!target.template) {
+							let observer = new MutationObserver(() => {
+								if (this.querySelector('template')) {
+									observer.disconnect();
+									owner.__render();
+								} else {
+									throw new Error('hrlink-table-column requires a <template> child');
+								}
+							})
+							observer.observe(this, {childList: true});
+							return false;
+						}
+						target.ctor = Polymer.Templatize.templatize(target.template, owner, options);
+					}
+				});
+				return !!(this.display.ctor);
+			}
+
+			__insertHeading(parentNode, model, instIdx, itemIdx) {
+				let inst = new this.heading.ctor(model);
+				inst.__wrap = parentNode;
+				this.heading.instance = inst;
+				parentNode.appendChild(inst.root);
+				parentNode.style.width = `${this.width}em`;
+				return inst;
+			}
+
+			__insertInstance(parentNode, model, instIdx, itemIdx) {
+				let inst = new this.display.ctor(model);
+				inst.__wrap = parentNode;
+				this.display.instances.splice(instIdx, 0, inst);
+				parentNode.appendChild(inst.root);
+				parentNode.style.width = `${this.width}em`;
+				return inst;
+			}
+
+			__handleWidthChanged(newWidth) {
+				let width = `${newWidth}em`;
+				for (let instance of this.display.instances) {
+					instance.__wrap.style.width = width;
+				}
+				if (this.heading.instance) {
+					this.heading.instance.__wrap.style.width = width;
+				}
+			}
+
+		}
+
+		window.customElements.define(HrlinkTableColumn.is, HrlinkTableColumn);
+	</script>
+</dom-module>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+	<title>hrlink-table demo</title>
+
+	<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+	<link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+	<link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+	<link rel="import" href="../../iron-ajax/iron-ajax.html">
+	<link rel="import" href="../../paper-input/paper-input.html">
+	<link rel="import" href="../hrlink-table.html">
+
+	<custom-style>
+		<style is="custom-style" include="demo-pages-shared-styles">
+			#container {
+				max-width: 960px;
+			}
+		</style>
+	</custom-style>
+</head>
+
+<body>
+	<div id="container" class="vertical-section-container centered">
+		<h3>Basic hrlink-table demo</h3>
+		<demo-snippet>
+			<template>
+				<dom-bind>
+					<template>
+						<iron-ajax auto url="data/customers.json" last-response="{{customers}}"></iron-ajax>
+						<h3>Selected Company: [[selection.CompanyName]]</h3>
+						<hrlink-table items="{{customers}}"
+								selection="{{selection}}"
+								strip>
+							<hrlink-table-column width="6">
+								<template slot="heading">Id</template>
+								<template slot="display">[[item.Id]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.Id}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="18">
+								<template slot="heading">Company Name</template>
+								<template slot="display">[[item.CompanyName]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.CompanyName}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="10">
+								<template slot="heading">Fax</template>
+								<template slot="display">[[item.Fax]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.Fax}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="12">
+								<template slot="heading">Contact Name</template>
+								<template slot="display">[[item.ContactName]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.ContactName}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="16">
+								<template slot="heading">Contact Title</template>
+								<template slot="display">[[item.ContactTitle]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.ContactTitle}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="10">
+								<template slot="heading">Phone</template>
+								<template slot="display">[[item.Phone]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.Phone}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="8">
+								<template slot="heading">Country</template>
+								<template slot="display">[[item.Country]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.Country}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="10">
+								<template slot="heading">City</template>
+								<template slot="display">[[item.City]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.City}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="26">
+								<template slot="heading">Address</template>
+								<template slot="display">[[item.Address]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.Address}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+							<hrlink-table-column width="8">
+								<template slot="heading">Postal Code</template>
+								<template slot="display">[[item.PostalCode]]</template>
+								<template slot="editor">
+									<paper-input value="{{item.PostalCode}}"></paper-input>
+								</template>
+							</hrlink-table-column>
+						</hrlink-table>
+					</template>
+				</dom-bind>
+			</template>
+		</demo-snippet>
+	</div>
+</body>
+
+</html>
